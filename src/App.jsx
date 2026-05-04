@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Play, Pause, Volume2, FastForward, Rewind, Music, RotateCcw, RotateCw, SlidersHorizontal, Gauge } from 'lucide-react';
 
 function App() {
@@ -44,6 +44,116 @@ function App() {
   
   const progressBarRef = useRef(null);
 
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const sourceRef = useRef(null);
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+
+  const initAudioVisualizer = () => {
+    if (!audioContextRef.current && audioRef.current) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioContextRef.current = new AudioContext();
+      
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 128;
+      
+      sourceRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
+      sourceRef.current.connect(analyserRef.current);
+      analyserRef.current.connect(audioContextRef.current.destination);
+    }
+  };
+
+  useLayoutEffect(() => {
+    const handleResize = () => {
+      if (canvasRef.current && canvasRef.current.parentElement) {
+        const rect = canvasRef.current.parentElement.getBoundingClientRect();
+        canvasRef.current.width = rect.width;
+        canvasRef.current.height = rect.height;
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    // Initial size setting
+    setTimeout(handleResize, 0); 
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const drawVisualizer = () => {
+    if (!analyserRef.current || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    const bufferLength = analyserRef.current.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    
+    analyserRef.current.getByteFrequencyData(dataArray);
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    const activeBins = 32; // Focus on the lower/mid frequencies
+    const totalBars = activeBins * 2;
+    const visualWidth = width * 2.55; // Slightly reduced horizontal zoom (was 3x)
+    const barWidth = (visualWidth / totalBars) * 0.85;
+    const gap = (visualWidth / totalBars) * 0.15;
+    const center = width / 2;
+    
+    // Soft, pleasing colors
+    const colors = ['#FF6B6B', '#FFA06B', '#FFD166', '#06D6A0', '#118AB2', '#8338EC'];
+    
+    for (let i = 0; i < activeBins; i++) {
+      const time = Date.now() / 1000;
+      // Idle animation so it breathes when quiet
+      const idle = Math.abs(Math.sin(i * 0.1 + time * 1.5)) * (height * 0.1);
+      const value = dataArray[i];
+      
+      // Slightly reduced vertical zoom (was 1.2x)
+      let barHeight = (value / 255) * (height * 1.05) + idle;
+      if (barHeight < height * 0.05) barHeight = height * 0.05;
+      
+      const color = colors[i % colors.length];
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.5; // Soft translucency
+      
+      const xOffset = i * (barWidth + gap);
+      const yOffset = height - barHeight;
+      
+      // Right side
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(center + xOffset, yOffset, barWidth, barHeight, barWidth / 2);
+      } else {
+        ctx.fillRect(center + xOffset, yOffset, barWidth, barHeight);
+      }
+      ctx.fill();
+      
+      // Left side mirrored
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(center - xOffset - barWidth, yOffset, barWidth, barHeight, barWidth / 2);
+      } else {
+        ctx.fillRect(center - xOffset - barWidth, yOffset, barWidth, barHeight);
+      }
+      ctx.fill();
+    }
+    
+    animationRef.current = requestAnimationFrame(drawVisualizer);
+  };
+
+  useEffect(() => {
+    if (isPlaying) {
+      if (audioContextRef.current?.state === 'suspended') {
+        audioContextRef.current.resume();
+      }
+      animationRef.current = requestAnimationFrame(drawVisualizer);
+    } else {
+      cancelAnimationFrame(animationRef.current);
+    }
+    return () => cancelAnimationFrame(animationRef.current);
+  }, [isPlaying]);
+
   useEffect(() => {
     // Initial setup
     if (audioRef.current) {
@@ -80,6 +190,7 @@ function App() {
 
   const togglePlay = (e) => {
     if (e) e.stopPropagation();
+    initAudioVisualizer();
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
@@ -269,6 +380,16 @@ function App() {
 
   return (
     <div className="player-container">
+      <canvas 
+        ref={canvasRef} 
+        style={{
+          position: 'absolute',
+          top: 0, left: 0,
+          width: '100%', height: '100%',
+          zIndex: 0, pointerEvents: 'none'
+        }}
+      />
+      
       {/* Invisible interaction layer covering the screen */}
       <div 
         className="interaction-layer"
@@ -351,9 +472,7 @@ function App() {
         </div>
         
         <div className="artwork-container">
-          <div className={`artwork ${!isPlaying ? 'paused' : ''}`}>
-            <Music size={64} className="icon-large" />
-          </div>
+          {/* Background visualizer covers this area */}
         </div>
         
         <div className="help-text">
@@ -458,6 +577,7 @@ function App() {
       <audio 
         ref={audioRef}
         src="/sample.mp3"
+        crossOrigin="anonymous"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => setIsPlaying(false)}

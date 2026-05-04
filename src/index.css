@@ -1,14 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
 :root {
-  --bg-color: #f0fdf4;
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(255, 255, 255, 1);
-  --primary: #FF6B6B;
-  --primary-glow: rgba(255, 107, 107, 0.4);
-  --text-main: #2d3436;
-  --text-muted: #636e72;
-  --spectrum: linear-gradient(to right, #FF6B6B, #FFA06B, #FFD166, #06D6A0, #118AB2, #8338EC);
+  --bg-color: #f8fafc;
+  --glass-bg: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(226, 232, 240, 1);
+  --primary: #3b82f6;
+  --primary-glow: rgba(59, 130, 246, 0.3);
+  --text-main: #334155;
+  --text-muted: #64748b;
 }
 
 * {
@@ -20,7 +19,7 @@
 
 body {
   font-family: 'Nunito', sans-serif;
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  background: #f1f5f9;
   color: var(--text-main);
   height: 100dvh;
   display: flex;
@@ -82,9 +81,7 @@ body {
   font-weight: 600;
   letter-spacing: -0.02em;
   margin-bottom: 0.5rem;
-  background: var(--spectrum);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--primary);
 }
 
 .subtitle {
@@ -102,47 +99,30 @@ body {
   pointer-events: none;
 }
 
-.artwork {
-  width: 240px;
+.visualizer-container {
+  width: 100%;
   height: 240px;
-  border-radius: 50%;
-  background: white;
-  border: 4px solid white;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
-  animation: float 6s ease-in-out infinite;
 }
 
-.artwork::after {
-  content: '';
+canvas {
+  filter: drop-shadow(0 4px 12px var(--primary-glow));
+}
+
+.play-prompt {
   position: absolute;
-  top: -6px; left: -6px; right: -6px; bottom: -6px;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, #FF6B6B, #FFA06B, #FFD166, #06D6A0, #118AB2, #8338EC, #FF6B6B);
-  z-index: -1;
-  animation: spin 4s linear infinite;
-  opacity: 1;
-}
-
-.artwork.paused::after {
-  animation-play-state: paused;
-}
-
-@keyframes spin {
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.icon-large {
   color: var(--primary);
-  opacity: 1;
+  font-weight: 700;
+  opacity: 0.5;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
 }
 
 /* Controls */
@@ -217,7 +197,7 @@ body {
 
 .progress-fill {
   height: 6px;
-  background: var(--spectrum);
+  background: var(--primary);
   border-radius: 3px;
   position: absolute;
   top: 50%;
@@ -370,8 +350,8 @@ body {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: var(--spectrum);
-  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.4);
+  background: var(--primary);
+  box-shadow: 0 8px 20px var(--primary-glow);
   color: white;
   transform: scale(1.1);
 }
@@ -503,7 +483,7 @@ body {
 
 .volume-fill {
   width: 100%;
-  background: var(--spectrum);
+  background: var(--primary);
   border-radius: 3px;
   transition: height 0.1s;
 }
@@ -539,9 +519,8 @@ body {
     height: 100%;
   }
 
-  .artwork {
-    width: min(200px, 60vh);
-    height: min(200px, 60vh);
+  .visualizer-container {
+    height: 100%;
   }
 
   .help-text {
