@@ -501,3 +501,61 @@ body {
   opacity: 0.7;
   margin-top: 1.5rem;
 }
+
+/* Landscape Mode Overrides */
+@media (orientation: landscape) {
+  #root {
+    max-width: 900px;
+  }
+
+  .ui-layer {
+    flex-direction: row;
+    align-items: center;
+    padding: max(1rem, env(safe-area-inset-top)) max(2rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(2rem, env(safe-area-inset-left));
+    gap: 2rem;
+  }
+
+  .header {
+    display: none;
+  }
+
+  .artwork-container {
+    flex: 1;
+    margin: 0;
+    height: 100%;
+  }
+
+  .artwork {
+    width: min(200px, 60vh);
+    height: min(200px, 60vh);
+  }
+
+  .help-text {
+    position: absolute;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    left: max(2rem, env(safe-area-inset-left));
+    width: calc(45% - 2rem);
+    text-align: center;
+    margin: 0;
+  }
+
+  .controls-section {
+    flex: 1.2;
+    margin: 0;
+    padding: 1.5rem;
+    border-radius: 24px;
+    border: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .controls-section.hidden {
+    transform: translateX(120%);
+  }
+
+  .controls-toggle {
+    bottom: 2rem;
+    right: 2rem;
+  }
+}
