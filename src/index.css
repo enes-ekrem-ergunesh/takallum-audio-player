@@ -32,7 +32,6 @@ body {
 #root {
   width: 100%;
   height: 100%;
-  max-width: 480px;
   position: relative;
 }
 
@@ -62,6 +61,9 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
   padding: 2rem;
   pointer-events: none; /* Let touches pass through to interaction layer unless explicitly handled */
 }
@@ -505,15 +507,13 @@ canvas {
 
 /* Landscape Mode Overrides */
 @media (orientation: landscape) {
-  #root {
-    max-width: 600px;
-  }
-
   .ui-layer {
     flex-direction: column;
     justify-content: center;
     align-items: center;
     padding: max(1rem, env(safe-area-inset-top)) max(2rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(2rem, env(safe-area-inset-left));
+    max-width: 600px;
+    margin: 0 auto;
   }
 
   .header {
