@@ -425,48 +425,46 @@ function App() {
         onPointerCancel={handlePointerUp}
       />
       
-      {(showSpeedModal || showVolumeModal) && (
-        <div 
-          className="modal-overlay" 
-          onPointerDown={() => { setShowSpeedModal(false); setShowVolumeModal(false); }} 
-        >
-          {showSpeedModal && (
-            <div className="center-modal" onPointerDown={e => e.stopPropagation()}>
-              <div className="modal-title">{playbackRate}x Speed</div>
-              <input 
-                type="range" 
-                className="modal-slider large"
-                min="0.25" max="3" step="0.25" 
-                value={playbackRate} 
-                onChange={(e) => {
-                  const rate = parseFloat(e.target.value);
-                  setPlaybackRate(rate);
-                  if (audioRef.current && !is2xSpeed) {
-                    audioRef.current.playbackRate = rate;
-                  }
-                }} 
-              />
-            </div>
-          )}
-          
-          {showVolumeModal && (
-            <div className="center-modal" onPointerDown={e => e.stopPropagation()}>
-              <div className="modal-title">{Math.round(volume * 100)}% Volume</div>
-              <input 
-                type="range" 
-                className="modal-slider large"
-                min="0" max="1" step="0.05" 
-                value={volume} 
-                onChange={(e) => {
-                  const vol = parseFloat(e.target.value);
-                  setVolume(vol);
-                  if (audioRef.current) audioRef.current.volume = vol;
-                }} 
-              />
-            </div>
-          )}
+      <div 
+        className={`modal-overlay ${(showSpeedModal || showVolumeModal) ? 'visible' : ''}`} 
+        onClick={(e) => { 
+          e.stopPropagation(); 
+          setShowSpeedModal(false); 
+          setShowVolumeModal(false); 
+        }} 
+      >
+        <div className={`center-modal ${showSpeedModal ? 'visible' : ''}`} onClick={e => e.stopPropagation()}>
+          <div className="modal-title">{playbackRate}x Speed</div>
+          <input 
+            type="range" 
+            className="modal-slider large"
+            min="0.25" max="3" step="0.25" 
+            value={playbackRate} 
+            onChange={(e) => {
+              const rate = parseFloat(e.target.value);
+              setPlaybackRate(rate);
+              if (audioRef.current && !is2xSpeed) {
+                audioRef.current.playbackRate = rate;
+              }
+            }} 
+          />
         </div>
-      )}
+        
+        <div className={`center-modal ${showVolumeModal ? 'visible' : ''}`} onClick={e => e.stopPropagation()}>
+          <div className="modal-title">{Math.round(volume * 100)}% Volume</div>
+          <input 
+            type="range" 
+            className="modal-slider large"
+            min="0" max="1" step="0.05" 
+            value={volume} 
+            onChange={(e) => {
+              const vol = parseFloat(e.target.value);
+              setVolume(vol);
+              if (audioRef.current) audioRef.current.volume = vol;
+            }} 
+          />
+        </div>
+      </div>
       
       {/* Overlays for Gestures */}
       <div className="indicator-overlay">
