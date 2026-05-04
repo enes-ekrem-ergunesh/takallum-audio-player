@@ -14,6 +14,8 @@ function App() {
   
   const [skipLeft, setSkipLeft] = useState(0);
   const [skipRight, setSkipRight] = useState(0);
+  const [skipLeftVisible, setSkipLeftVisible] = useState(false);
+  const [skipRightVisible, setSkipRightVisible] = useState(false);
   
   // Refs for tracking gestures
   const lastTap = useRef(null);
@@ -173,14 +175,16 @@ function App() {
           const diff = Math.round(newTime - swipeStart.current.time);
           if (diff > 0) {
             setSkipRight(diff);
-            setSkipLeft(0);
+            setSkipRightVisible(true);
+            setSkipLeftVisible(false);
             clearTimeout(skipRightTimer.current);
-            skipRightTimer.current = setTimeout(() => setSkipRight(0), 1000);
+            skipRightTimer.current = setTimeout(() => setSkipRightVisible(false), 1000);
           } else if (diff < 0) {
             setSkipLeft(Math.abs(diff));
-            setSkipRight(0);
+            setSkipLeftVisible(true);
+            setSkipRightVisible(false);
             clearTimeout(skipLeftTimer.current);
-            skipLeftTimer.current = setTimeout(() => setSkipLeft(0), 1000);
+            skipLeftTimer.current = setTimeout(() => setSkipLeftVisible(false), 1000);
           }
         }
       }
@@ -224,15 +228,17 @@ function App() {
         }
         
         if (isRight) {
-          setSkipRight(prev => prev + 5);
-          setSkipLeft(0);
+          setSkipRight(prev => skipRightVisible ? prev + 5 : 5);
+          setSkipRightVisible(true);
+          setSkipLeftVisible(false);
           clearTimeout(skipRightTimer.current);
-          skipRightTimer.current = setTimeout(() => setSkipRight(0), 1000);
+          skipRightTimer.current = setTimeout(() => setSkipRightVisible(false), 1000);
         } else {
-          setSkipLeft(prev => prev + 5);
-          setSkipRight(0);
+          setSkipLeft(prev => skipLeftVisible ? prev + 5 : 5);
+          setSkipLeftVisible(true);
+          setSkipRightVisible(false);
           clearTimeout(skipLeftTimer.current);
-          skipLeftTimer.current = setTimeout(() => setSkipLeft(0), 1000);
+          skipLeftTimer.current = setTimeout(() => setSkipLeftVisible(false), 1000);
         }
         
         lastTap.current = { time: now, side: isRight ? 'right' : 'left' };
@@ -264,19 +270,15 @@ function App() {
           <div className="speed-indicator">2x Speed</div>
         )}
         
-        {skipLeft > 0 && (
-          <div className="skip-indicator left">
-            <Rewind size={32} />
-            <div className="skip-text">-{skipLeft}s</div>
-          </div>
-        )}
+        <div className={`skip-indicator left ${skipLeftVisible ? 'visible' : ''}`}>
+          <Rewind size={32} />
+          <div className="skip-text">-{skipLeft}s</div>
+        </div>
         
-        {skipRight > 0 && (
-          <div className="skip-indicator right">
-            <FastForward size={32} />
-            <div className="skip-text">+{skipRight}s</div>
-          </div>
-        )}
+        <div className={`skip-indicator right ${skipRightVisible ? 'visible' : ''}`}>
+          <FastForward size={32} />
+          <div className="skip-text">+{skipRight}s</div>
+        </div>
         
         <div className={`volume-indicator ${volVisible ? 'visible' : ''}`}>
           <Volume2 size={24} color="#fff" />
