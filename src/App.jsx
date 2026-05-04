@@ -338,7 +338,7 @@ function App() {
         </div>
         
         <div className={`volume-indicator ${volVisible ? 'visible' : ''}`}>
-          <Volume2 size={24} color="#fff" />
+          <Volume2 size={24} color="var(--primary)" />
           <div className="volume-bar-bg">
             <div className="volume-fill" style={{ height: `${volume * 100}%` }} />
           </div>
