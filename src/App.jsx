@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, FastForward, Rewind, Music } from 'lucide-react';
+import { Play, Pause, Volume2, FastForward, Rewind, Music, RotateCcw, RotateCw, SlidersHorizontal } from 'lucide-react';
 
 function App() {
   const audioRef = useRef(null);
@@ -16,6 +16,16 @@ function App() {
   const [skipRight, setSkipRight] = useState(0);
   const [skipLeftVisible, setSkipLeftVisible] = useState(false);
   const [skipRightVisible, setSkipRightVisible] = useState(false);
+  
+  const [showControls, setShowControls] = useState(true);
+  const controlsTimeout = useRef(null);
+  
+  useEffect(() => {
+    clearTimeout(controlsTimeout.current);
+    if (isPlaying && showControls) {
+      controlsTimeout.current = setTimeout(() => setShowControls(false), 4000);
+    }
+  }, [isPlaying, showControls, currentTime]);
   
   // Refs for tracking gestures
   const lastTap = useRef(null);
@@ -119,6 +129,7 @@ function App() {
   const handlePointerDown = (e) => {
     // Only handle primary pointer (usually touch or left click)
     if (!e.isPrimary) return;
+    setShowControls(true);
 
     swipeStart.current = { 
       x: e.clientX,
@@ -303,7 +314,14 @@ function App() {
           Double-tap or swipe horizontally to skip • Swipe vertically for volume • Hold for 2x speed
         </div>
 
-        <div className="controls-section">
+        <button 
+          className={`controls-toggle ${!showControls ? 'visible' : ''}`}
+          onClick={(e) => { e.stopPropagation(); setShowControls(true); }}
+        >
+          <SlidersHorizontal size={24} />
+        </button>
+
+        <div className={`controls-section ${!showControls ? 'hidden' : ''}`}>
           <div className="progress-container">
             <div 
               className="progress-bar-bg" 
@@ -325,13 +343,24 @@ function App() {
           
           <div className="main-controls">
             <button 
-              className="btn" 
+              className="skip-btn secondary" 
               onClick={(e) => {
                 e.stopPropagation();
-                if (audioRef.current) audioRef.current.currentTime -= 5;
+                if (audioRef.current) audioRef.current.currentTime -= 30;
               }}
             >
-              <Rewind size={24} />
+              <RotateCcw size={22} />
+              <span className="skip-btn-text">30</span>
+            </button>
+            <button 
+              className="skip-btn" 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (audioRef.current) audioRef.current.currentTime -= 10;
+              }}
+            >
+              <RotateCcw size={28} />
+              <span className="skip-btn-text">10</span>
             </button>
             
             <button className="btn btn-play" onClick={togglePlay}>
@@ -339,13 +368,24 @@ function App() {
             </button>
             
             <button 
-              className="btn" 
+              className="skip-btn" 
               onClick={(e) => {
                 e.stopPropagation();
-                if (audioRef.current) audioRef.current.currentTime += 5;
+                if (audioRef.current) audioRef.current.currentTime += 10;
               }}
             >
-              <FastForward size={24} />
+              <RotateCw size={28} />
+              <span className="skip-btn-text">10</span>
+            </button>
+            <button 
+              className="skip-btn secondary" 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (audioRef.current) audioRef.current.currentTime += 30;
+              }}
+            >
+              <RotateCw size={28} />
+              <span className="skip-btn-text">30</span>
             </button>
           </div>
         </div>
