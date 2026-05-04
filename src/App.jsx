@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, FastForward, Rewind, Music, RotateCcw, RotateCw, SlidersHorizontal } from 'lucide-react';
+import { Play, Pause, Volume2, FastForward, Rewind, Music, RotateCcw, RotateCw, SlidersHorizontal, Gauge } from 'lucide-react';
 
 function App() {
   const audioRef = useRef(null);
@@ -11,6 +11,9 @@ function App() {
   const [is2xSpeed, setIs2xSpeed] = useState(false);
   const [volume, setVolume] = useState(1);
   const [volVisible, setVolVisible] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [showSpeedModal, setShowSpeedModal] = useState(false);
+  const [showVolumeModal, setShowVolumeModal] = useState(false);
   
   const [skipLeft, setSkipLeft] = useState(0);
   const [skipRight, setSkipRight] = useState(0);
@@ -209,7 +212,7 @@ function App() {
     clearTimeout(longPressTimer.current);
     if (is2xSpeed) {
       setIs2xSpeed(false);
-      if (audioRef.current) audioRef.current.playbackRate = 1;
+      if (audioRef.current) audioRef.current.playbackRate = playbackRate;
       swipeStart.current = null;
       return;
     }
@@ -274,6 +277,49 @@ function App() {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       />
+      
+      {(showSpeedModal || showVolumeModal) && (
+        <div 
+          className="modal-overlay" 
+          onPointerDown={() => { setShowSpeedModal(false); setShowVolumeModal(false); }} 
+        >
+          {showSpeedModal && (
+            <div className="center-modal" onPointerDown={e => e.stopPropagation()}>
+              <div className="modal-title">{playbackRate}x Speed</div>
+              <input 
+                type="range" 
+                className="modal-slider large"
+                min="0.25" max="3" step="0.25" 
+                value={playbackRate} 
+                onChange={(e) => {
+                  const rate = parseFloat(e.target.value);
+                  setPlaybackRate(rate);
+                  if (audioRef.current && !is2xSpeed) {
+                    audioRef.current.playbackRate = rate;
+                  }
+                }} 
+              />
+            </div>
+          )}
+          
+          {showVolumeModal && (
+            <div className="center-modal" onPointerDown={e => e.stopPropagation()}>
+              <div className="modal-title">{Math.round(volume * 100)}% Volume</div>
+              <input 
+                type="range" 
+                className="modal-slider large"
+                min="0" max="1" step="0.05" 
+                value={volume} 
+                onChange={(e) => {
+                  const vol = parseFloat(e.target.value);
+                  setVolume(vol);
+                  if (audioRef.current) audioRef.current.volume = vol;
+                }} 
+              />
+            </div>
+          )}
+        </div>
+      )}
       
       {/* Overlays for Gestures */}
       <div className="indicator-overlay">
@@ -342,6 +388,15 @@ function App() {
           </div>
           
           <div className="main-controls">
+            <div style={{ position: 'relative' }}>
+              <button 
+                className={`btn ${showSpeedModal ? 'active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setShowSpeedModal(!showSpeedModal); setShowVolumeModal(false); }}
+              >
+                <Gauge size={22} color={showSpeedModal ? 'var(--primary)' : 'currentColor'} />
+              </button>
+            </div>
+
             <button 
               className="skip-btn secondary" 
               onClick={(e) => {
@@ -384,9 +439,18 @@ function App() {
                 if (audioRef.current) audioRef.current.currentTime += 30;
               }}
             >
-              <RotateCw size={28} />
+              <RotateCw size={22} />
               <span className="skip-btn-text">30</span>
             </button>
+
+            <div style={{ position: 'relative' }}>
+              <button 
+                className={`btn ${showVolumeModal ? 'active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setShowVolumeModal(!showVolumeModal); setShowSpeedModal(false); }}
+              >
+                <Volume2 size={22} color={showVolumeModal ? 'var(--primary)' : 'currentColor'} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
