@@ -49,6 +49,16 @@ function App() {
   const sourceRef = useRef(null);
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
+  const isPlayingRef = useRef(isPlaying);
+  const smoothedDataArrayRef = useRef(new Float32Array(128));
+  const smoothPresenceRef = useRef(0);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+    if (isPlaying && audioContextRef.current?.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+  }, [isPlaying]);
 
   const initAudioVisualizer = () => {
     if (!audioContextRef.current && audioRef.current) {
@@ -79,17 +89,12 @@ function App() {
   }, []);
 
   const drawVisualizer = () => {
-    if (!analyserRef.current || !canvasRef.current) return;
+    if (!canvasRef.current) return;
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-    
-    const bufferLength = analyserRef.current.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    
-    analyserRef.current.getByteFrequencyData(dataArray);
     
     ctx.clearRect(0, 0, width, height);
     
@@ -100,22 +105,48 @@ function App() {
     const gap = (visualWidth / totalBars) * 0.15;
     const center = width / 2;
     
-    // Soft, pleasing colors
-    const colors = ['#FF6B6B', '#FFA06B', '#FFD166', '#06D6A0', '#118AB2', '#8338EC'];
+    // More vibrant, punchy colors
+    const colors = ['#FF2A5F', '#FF8F1C', '#FFD12A', '#00E676', '#00D4FF', '#A020F0'];
+    
+    // Smoothly transition presence (from 0 to 1)
+    const targetPresence = isPlayingRef.current ? 1 : 0;
+    const presenceLerp = isPlayingRef.current ? 0.05 : 0.02; // Slower fade out
+    smoothPresenceRef.current += (targetPresence - smoothPresenceRef.current) * presenceLerp;
+    const presence = smoothPresenceRef.current;
+    
+    // Stop processing if completely invisible to save CPU
+    if (presence < 0.01 && !isPlayingRef.current) return;
+
+    let dataArray = null;
+    if (analyserRef.current) {
+      dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      analyserRef.current.getByteFrequencyData(dataArray);
+    }
     
     for (let i = 0; i < activeBins; i++) {
       const time = Date.now() / 1000;
-      // Idle animation so it breathes when quiet
-      const idle = Math.abs(Math.sin(i * 0.1 + time * 1.5)) * (height * 0.1);
-      const value = dataArray[i];
+      
+      const rawValue = dataArray ? dataArray[i] : 0;
+      // If paused, target goes to 0
+      const targetValue = isPlayingRef.current ? rawValue : 0;
+      
+      // Smooth the bar height dynamically. Fast when playing, slow when paused!
+      const dataLerp = isPlayingRef.current ? 0.15 : 0.03;
+      smoothedDataArrayRef.current[i] += (targetValue - smoothedDataArrayRef.current[i]) * dataLerp;
+      const value = smoothedDataArrayRef.current[i];
+      
+      // Idle animation so it breathes when quiet, fades out completely when paused
+      const idle = Math.abs(Math.sin(i * 0.1 + time * 1.5)) * (height * 0.1) * presence;
       
       // Slightly reduced vertical zoom (was 1.2x)
       let barHeight = (value / 255) * (height * 1.05) + idle;
-      if (barHeight < height * 0.05) barHeight = height * 0.05;
+      if (barHeight < height * 0.05 * presence) barHeight = height * 0.05 * presence;
+      
+      if (barHeight < 1) continue;
       
       const color = colors[i % colors.length];
       ctx.fillStyle = color;
-      ctx.globalAlpha = 0.5; // Soft translucency
+      ctx.globalAlpha = 0.65; // Slightly more solid for vibrant look
       
       const xOffset = i * (barWidth + gap);
       const yOffset = height - barHeight;
@@ -138,21 +169,16 @@ function App() {
       }
       ctx.fill();
     }
-    
-    animationRef.current = requestAnimationFrame(drawVisualizer);
   };
 
   useEffect(() => {
-    if (isPlaying) {
-      if (audioContextRef.current?.state === 'suspended') {
-        audioContextRef.current.resume();
-      }
-      animationRef.current = requestAnimationFrame(drawVisualizer);
-    } else {
-      cancelAnimationFrame(animationRef.current);
-    }
+    const loop = () => {
+      drawVisualizer();
+      animationRef.current = requestAnimationFrame(loop);
+    };
+    animationRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [isPlaying]);
+  }, []);
 
   useEffect(() => {
     // Initial setup
